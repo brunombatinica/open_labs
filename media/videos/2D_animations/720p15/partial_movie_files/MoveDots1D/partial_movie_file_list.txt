@@ -1,0 +1,4 @@
+# This file is used internally by FFMPEG.
+file 'file:C:/Users/bruno/OneDrive/Documents/Code/projects/open_labs/media/videos/2D_animations/720p15/partial_movie_files/MoveDots1D/42755272_4073845205_1482396155.mp4'
+file 'file:C:/Users/bruno/OneDrive/Documents/Code/projects/open_labs/media/videos/2D_animations/720p15/partial_movie_files/MoveDots1D/830672947_1230799944_2534920873.mp4'
+file 'file:C:/Users/bruno/OneDrive/Documents/Code/projects/open_labs/media/videos/2D_animations/720p15/partial_movie_files/MoveDots1D/830672947_1219373736_2122737122.mp4'
