@@ -1,0 +1,4 @@
+# This file is used internally by FFMPEG.
+file 'file:C:/Users/bruno/OneDrive/Documents/Code/projects/open_labs/media/videos/animations/1080p60/partial_movie_files/ShowXAxis/2743010386_4073845205_722384951.mp4'
+file 'file:C:/Users/bruno/OneDrive/Documents/Code/projects/open_labs/media/videos/animations/1080p60/partial_movie_files/ShowXAxis/3790338095_33636202_3208680771.mp4'
+file 'file:C:/Users/bruno/OneDrive/Documents/Code/projects/open_labs/media/videos/animations/1080p60/partial_movie_files/ShowXAxis/3790338095_1219373736_2099544053.mp4'
