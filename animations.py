@@ -8,8 +8,6 @@ class BaseScene(Scene):
         # Set white background
         self.camera.background_color = WHITE
         
-        
-        
         # Create the axes
         self.axes = Axes(
             x_range=[0, 8, 1],
@@ -43,7 +41,6 @@ class BaseScene(Scene):
         # Generate coordinates for dots
         self.xy_coordinates_brown = [(np.random.normal(3.2, 1.5), np.random.normal(2, 1)) for _ in range(30)]
         self.xy_coordinates_orange = [(np.random.normal(5, 1.5), np.random.normal(4, 1)) for _ in range(30)]
-        # print(self.xy_coordinates_orange)
         
         # Create initial positions (above x-axis)
         self.initial_positions_brown = [
@@ -100,6 +97,134 @@ class BaseScene(Scene):
             Dot(color="#FFA500").move_to(pos)
             for pos in self.xy_positions_orange
         ])
+
+    def get_decision_line(self, m, c): 
+        # Calculate line endpoints (at the edges of the plot)
+        x_min, x_max = 0, 8
+        y_min, y_max = 0, 6
+        
+        # Calculate all possible intersection points
+        # With vertical boundaries
+        y_left = m * x_min + c   # y at x = x_min
+        y_right = m * x_max + c  # y at x = x_max
+        
+        # With horizontal boundaries
+        x_bottom = (y_min - c) / m if m != 0 else None  # x at y = y_min
+        x_top = (y_max - c) / m if m != 0 else None     # x at y = y_max
+        
+        # Collect all valid intersection points
+        points = []
+        
+        # Check intersections with vertical boundaries
+        if y_min <= y_left <= y_max:
+            points.append((x_min, y_left))
+        if y_min <= y_right <= y_max:
+            points.append((x_max, y_right))
+            
+        # Check intersections with horizontal boundaries
+        if x_bottom is not None and x_min <= x_bottom <= x_max:
+            points.append((x_bottom, y_min))
+        if x_top is not None and x_min <= x_top <= x_max:
+            points.append((x_top, y_max))
+        
+        # Sort points by x-coordinate to ensure correct line direction
+        points.sort()
+        
+        # Take the first and last points to draw the line
+        if len(points) >= 2:
+            start_point = self.axes.c2p(*points[0])
+            end_point = self.axes.c2p(*points[-1])
+        else:
+            # Fallback if no valid intersections (shouldn't happen with our setup)
+            start_point = self.axes.c2p(x_min, y_min)
+            end_point = self.axes.c2p(x_max, y_max)
+        
+        return Line(
+            start=start_point,
+            end=end_point,
+            color=BLACK,
+            stroke_width=2
+        )
+    
+    def get_regions(self, m, c):
+        # Calculate line endpoints (at the edges of the plot)
+        x_min, x_max = 0, 8
+        y_min, y_max = 0, 6
+        
+        # Calculate all possible intersection points
+        # With vertical boundaries
+        y_left = m * x_min + c   # y at x = x_min
+        y_right = m * x_max + c  # y at x = x_max
+        
+        # With horizontal boundaries
+        x_bottom = (y_min - c) / m if m != 0 else None  # x at y = y_min
+        x_top = (y_max - c) / m if m != 0 else None     # x at y = y_max
+        
+        # Collect all valid intersection points
+        points = []
+        
+        # Check intersections with vertical boundaries
+        if y_min <= y_left <= y_max:
+            points.append((x_min, y_left))
+        if y_min <= y_right <= y_max:
+            points.append((x_max, y_right))
+            
+        # Check intersections with horizontal boundaries
+        if x_bottom is not None and x_min <= x_bottom <= x_max:
+            points.append((x_bottom, y_min))
+        if x_top is not None and x_min <= x_top <= x_max:
+            points.append((x_top, y_max))
+        
+        # Sort points by x-coordinate to ensure correct line direction
+        points.sort()
+        
+        # Create region vertices
+        if len(points) >= 2:
+            # Left region (brown)
+            left_region = Polygon(
+                self.axes.c2p(x_min, y_min),
+                self.axes.c2p(x_min, min(y_max, points[0][1])),
+                self.axes.c2p(*points[0]),
+                self.axes.c2p(*points[-1]),
+                self.axes.c2p(x_max, y_min),
+                color="#562C0C",
+                fill_opacity=0.3,
+                stroke_width=0
+            )
+            
+            # Right region (orange)
+            right_region = Polygon(
+                self.axes.c2p(*points[0]),
+                self.axes.c2p(x_min, y_max),
+                self.axes.c2p(x_max, y_max),
+                self.axes.c2p(x_max, max(y_min, points[-1][1])),
+                self.axes.c2p(*points[-1]),
+                color="#F5A739",
+                fill_opacity=0.3,
+                stroke_width=0
+            )
+        else:
+            # Fallback if no valid intersections (shouldn't happen with our setup)
+            left_region = Polygon(
+                self.axes.c2p(x_min, y_min),
+                self.axes.c2p(x_min, y_max),
+                self.axes.c2p(x_max, y_max),
+                self.axes.c2p(x_max, y_min),
+                color="#562C0C",
+                fill_opacity=0.3,
+                stroke_width=0
+            )
+            right_region = Polygon(
+                self.axes.c2p(x_min, y_min),
+                self.axes.c2p(x_min, y_max),
+                self.axes.c2p(x_max, y_max),
+                self.axes.c2p(x_max, y_min),
+                color="#F5A739",
+                fill_opacity=0.3,
+                stroke_width=0
+            )
+        
+        return VGroup(left_region, right_region)
 
 class RandomDots(BaseScene):
     def construct(self):
@@ -226,7 +351,26 @@ class MoveDots2D(BaseScene):
         )
         self.wait(2)
 
-class ShowModel2D(BaseScene):
+class ShowInitialModel(BaseScene):
+    def construct(self):
+        self.add(self.xy_brown_dots, self.xy_orange_dots, self.axes_group)
+        
+        # Initial decision boundary: y = -x + 4
+        m_initial = -(5/7)  # Slope
+        c_initial = 5   # Intercept
+        
+        # Create initial decision boundary and regions
+        initial_line = self.get_decision_line(m_initial, c_initial)
+        initial_regions = self.get_regions(m_initial, c_initial)
+        
+        # Show initial decision boundary and regions
+        self.play(
+            Create(initial_line),
+            FadeIn(initial_regions)
+        )
+        self.wait(2)
+
+class OptimizeModel(BaseScene):
     def construct(self):
         self.add(self.xy_brown_dots, self.xy_orange_dots, self.axes_group)
         
@@ -242,61 +386,56 @@ class ShowModel2D(BaseScene):
         clf = SVC(kernel='linear')
         clf.fit(X, y)
         
-        # Get the decision boundary parameters
+        # Convert SVC parameters to slope-intercept form (y = mx + c)
+        # From w[0]*x + w[1]*y + b = 0
+        # to y = (-w[0]/w[1])x + (-b/w[1])
         w = clf.coef_[0]
         b = clf.intercept_[0]
+        m_optimal = -w[0]/w[1]  # Slope
+        c_optimal = -b/w[1]     # Intercept
         
-        # Calculate line endpoints (at the edges of the plot)
-        x_min, x_max = 0, 8
-        y_min, y_max = 0, 6
+        # Initial decision boundary: y = -x + 4
+        m_initial = -(5/7)  # Slope
+        c_initial = 5   # Intercept
         
-        # Calculate y values for the line at x_min and x_max
-        y1 = (-w[0] * x_min - b) / w[1]
-        y2 = (-w[0] * x_max - b) / w[1]
+        # Create initial decision boundary and regions
+        initial_line = self.get_decision_line(m_initial, c_initial)
+        initial_regions = self.get_regions(m_initial, c_initial)
         
-        # Clip y values to plot boundaries
-        y1 = np.clip(y1, y_min, y_max)
-        y2 = np.clip(y2, y_min, y_max)
+        # Add initial boundary and regions
+        self.add(initial_line, initial_regions)
+        self.wait(1)
         
-        # Create the decision boundary line
-        decision_line = Line(
-            start=self.axes.c2p(x_min, y1),
-            end=self.axes.c2p(x_max, y2),
-            color=BLACK,
-            stroke_width=2
-        )
+        # Create animation for fluctuating decision boundary
+        def get_fluctuating_boundary(t):
+            # Oscillate between initial and optimal parameters
+            if t < 0.8:
+                # First 80%: fluctuate around initial parameters with gradual start
+                # Start at -PI/5 and complete one full cycle
+                m = m_initial - (1 + np.sin( (2 * PI * t / 0.8) * 3 - PI/2)) * 0.5
+                c = c_initial + (1 - np.cos( (2 * PI * t / 0.8) * 2)) * 2
+            else:
+                # Last 20%: transition to optimal parameters
+                progress = (t - 0.8) * 5  # Scale to 0-1 range
+                m = m_initial + (m_optimal - m_initial) * progress
+                c = c_initial + (c_optimal - c_initial) * progress
+            
+            return VGroup(
+                self.get_decision_line(m, c),
+                self.get_regions(m, c)
+            )
         
-        # Create colored regions
-        # Left region (brown)
-        left_region = Polygon(
-            self.axes.c2p(x_min, y_min),
-            self.axes.c2p(x_min, y1),
-            self.axes.c2p(x_max, y2),
-            self.axes.c2p(x_max, y_min),
-            color="#562C0C",
-            fill_opacity=0.3,
-            stroke_width=0
-        )
-        
-        # Right region (orange)
-        right_region = Polygon(
-            self.axes.c2p(x_min, y1),
-            self.axes.c2p(x_min, y_max),
-            self.axes.c2p(x_max, y_max),
-            self.axes.c2p(x_max, y2),
-            color="#F5A739",
-            fill_opacity=0.3,
-            stroke_width=0
-        )
-        
-        # Show the decision boundary and regions
+        # Create the animation
+        boundary_group = VGroup(initial_line, initial_regions)
         self.play(
-            Create(decision_line),
-            FadeIn(left_region),
-            FadeIn(right_region)
+            UpdateFromAlphaFunc(
+                boundary_group,
+                lambda m, t: m.become(get_fluctuating_boundary(t))
+            ),
+            run_time=6,
+            rate_func=linear
         )
         self.wait(2)
-        
 
 class Show3DPlot(ThreeDScene):
     def construct(self):
@@ -368,7 +507,7 @@ class Show3DPlot(ThreeDScene):
         # Set initial camera orientation to match 2D view
         # Looking directly along the y-axis (height axis)
         self.set_camera_orientation(phi=90*DEGREES, theta=-90*DEGREES)
-        self.camera.frame_center = axes.c2p(4, 0, 5.5)  # Offset camera position in data coordinates
+        self.camera.frame_center = axes.c2p(4, 0, 4.5)  # Offset camera position in data coordinates
         
         # Add all elements
         self.add(axes, x_label, y_label, z_label, brown_dots, orange_dots)
@@ -380,7 +519,7 @@ class Show3DPlot(ThreeDScene):
         self.move_camera(
             phi=60*DEGREES,  # Tilt up to show height
             theta=-30*DEGREES,  # Rotate to show 3D perspective
-            frame_center=axes.c2p(4, 3, 7),  # Maintain offset during rotation
+            frame_center=axes.c2p(4, 3, 5),  # Maintain offset during rotation
             run_time=3
         )
         
